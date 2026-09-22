@@ -3,15 +3,16 @@ import { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { COLORS } from '@/constants/colors';
-import { STUDENT_ID } from '@/constants/student';
-import { getAttendanceHistory, type AttendanceRecord } from '@/lib/database';
-
+import { useAuth } from '@/lib/auth';
+import {getAttendanceHistory, AttendanceRecord } from '@/lib/database';
 export default function HistoryScreen() {
+  const { user } = useAuth();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadHistory = useCallback(() => {
-    getAttendanceHistory(STUDENT_ID).then((rows) => {
+    const studentId = user?.id ?? 'unknown';
+    getAttendanceHistory(studentId).then((rows) => {
       setRecords(rows);
       setLoading(false);
     });
