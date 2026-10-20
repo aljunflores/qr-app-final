@@ -18,6 +18,8 @@ import AppButton from '@/components/AppButton';
 import Header from '@/components/Header';
 import { COLORS } from '@/constants/colors';
 import { signIn } from '@/lib/auth';
+import { logActivity } from '@/lib/admin';
+import { getProfile, isAdminRole } from '@/lib/profiles';
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -36,6 +38,24 @@ export default function LoginScreen() {
 
       if (authError) {
         setError(authError.message);
+      } else if (data.user) {
+        // Best-effort audit entry (never blocks navigation).
+        try {
+          await logActivity('auth.login', 'session', null, `Signed in as ${email.trim()}`);
+        } catch {
+          // ignore
+        }
+        // Admins go straight to the Admin Dashboard; everyone else to the app.
+        try {
+          const profile = await getProfile(data.user.id);
+          if (profile && isAdminRole(profile.role)) {
+            router.replace('/(admin)');
+          } else {
+            router.replace('/(tabs)');
+          }
+        } catch {
+          router.replace('/(tabs)');
+        }
       } else {
         router.replace('/(tabs)');
       }

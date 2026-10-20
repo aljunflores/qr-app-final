@@ -1,11 +1,34 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import AppButton from '@/components/AppButton';
 import Header from '@/components/Header';
 import { COLORS } from '@/constants/colors';
+import { useAuth } from '@/lib/auth';
+import { getProfile, isAdminRole } from '@/lib/profiles';
 
 export default function Index() {
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        if (!user) {
+          if (active) setIsAdmin(false);
+          return;
+        }
+        const p = await getProfile(user.id);
+        if (active) setIsAdmin(!!p && isAdminRole(p.role));
+      })();
+      return () => {
+        active = false;
+      };
+    }, [user])
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerContainer}>
@@ -36,6 +59,13 @@ export default function Index() {
           icon="person-outline"
           onPress={() => router.push('/profile')}
         />
+        {isAdmin && (
+          <AppButton
+            title="Administrator Dashboard"
+            icon="shield-checkmark-outline"
+            onPress={() => router.push('/(admin)' as never)}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
